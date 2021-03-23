@@ -1,0 +1,137 @@
+{
+    "officedepot": {
+        "Domain": "https://www.officedepot.com",
+        "Page": {
+            "cart": "/cart/shoppingCart.do",
+            "checkout": "/checkout/anonymousSubmitSet.do"
+        },
+        "Layout":["cart", "checkout"],
+        "Map": {
+            "/a/products/": [
+                {
+                    "label": "SoldOut",
+                    "p": "//div[@class='deliveryMessage']/span[text()='Out of stock for delivery']",
+                    "np":true
+                },
+                {
+                    "label": "AddToCart",
+                    "p": "//input[@id='addToCartButtonId']",
+                    "c": true
+                },
+                {
+                    "label":"Warranty|AddedToCart",
+                    "p":"//div[@warranty-test='od-warranty-modal-container']//button[text()='Continue'] | //h3[@id='atc_addedHeading']",
+                    "c":true,
+                    "np":true
+                }
+                             
+            ],
+            "/cart/": [
+                {
+                    "label": "Quantity",
+                    "p": "//input[@id='quantity0']",
+                    "et": "1",
+                    "i": "1"
+                },
+                {
+                    "label": "CheckOut",
+                    "p": "//a[@href='/cart/checkout.do']"
+                }
+            ],
+            "/checkout/": [
+                {
+                    "label": "FName",
+                    "p": "//input[@id='firstName-2']",
+                    "it": "CI.FName"
+                },
+                {
+                    "label": "LName",
+                    "p": "//input[@id='lastName-2']",
+                    "it": "CI.LName"
+                },
+                {
+                    "label": "Addr",
+                    "p": "//input[@id='address1-2']",
+                    "it": "CI.Addr"
+                },
+                {
+                    "label": "City",
+                    "p": "//input[@id='city-2']",
+                    "it": "CI.City"
+                },
+                {
+                    "label": "State",
+                    "p": "//select[@id='state-2']",
+                    "it": "CI.State"
+                },
+                {
+                    "label": "ZIP",
+                    "p": "//input[@id='postalCode1-2']",
+                    "it": "CI.ZIP"
+                },
+                {
+                    "label": "Email",
+                    "p": "//input[@id='email-2']",
+                    "it": "CI.Email"
+                },
+                {
+                    "label": "Phone1",
+                    "p":"//input[@id='phoneNumber1-2']",
+                    "it": "CI.Phone1"
+                },
+                {
+                    "label": "Phone2",
+                    "p": "//input[@id='phoneNumber2-2']",
+                    "it": "CI.Phone2"
+                },
+                {
+                    "label": "Phone3",
+                    "p": "//input[@id='phoneNumber3-2']",
+                    "it": "CI.Phone3"
+                },
+                {
+                    "label": "ContinueToPayment",
+                    "p": "//button[@id='confirm2']",
+                    "c": true
+                },
+                {
+                    "label": "AddrNotRecognized",
+                    "p":"//div[@role='dialog']//button[@id='continue']",
+                    "np":true,
+                    "c":true
+                },
+                {
+                    "label":"PaymentSection",
+                    "p":"//div[@id='creditCardIframe']"
+                },
+                {
+                    "label": "CC",
+                    "iframe": "vantiv-payframe",
+                    "p": "//input[@id='accountNumber']",
+                    "it": "CI.CC"
+                },
+                {
+                    "label": "CVV",
+                    "iframe": "vantiv-payframe",
+                    "p": "//input[@id='cvv']",
+                    "it": "CI.CVV"
+                },
+                {
+                    "label": "EXPM",
+                    "p": "//select[@aria-label='Expiration Month']",
+                    "it": "CI.EXPM"
+                },
+                {
+                    "label": "EXPY",
+                    "p": "//select[@aria-label='Expiration Year']",
+                    "it": "CI.EXPY"
+                },
+                {
+                    "label": "ConfirmOrder",
+                    "p": "//select[@id='checkoutReviewOrderSummaryPlaceOrder']",
+                    "c": true
+                }
+            ]
+        }
+    }
+}
