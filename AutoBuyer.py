@@ -201,12 +201,18 @@ class productMonitor(threading.Thread):
 
 
             
-def init(headless):
-    fireFoxOptions = webdriver.FirefoxOptions()
-    if headless:
-        fireFoxOptions.set_headless()
-    broswer = webdriver.Firefox(options=fireFoxOptions)
-    return broswer
+def init(headless, firefox=False):
+    if firefox:
+        fireFoxOptions = webdriver.FirefoxOptions()
+        if headless:
+            fireFoxOptions.set_headless()
+        broswer = webdriver.Firefox(executable_path="./geckodriver.exe", options=fireFoxOptions)
+    else:
+        chromeOptions = webdriver.ChromeOptions()
+        if headless:
+            chromeOptions.set_headless()
+        broswer = webdriver.Chrome(executable_path="./chromedriver.exe", options=chromeOptions)
+        return broswer
 
 
 
