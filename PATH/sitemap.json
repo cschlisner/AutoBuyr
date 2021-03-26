@@ -1,6 +1,7 @@
 {
     "officedepot": {
         "Domain": "https://www.officedepot.com",
+        "PingRate":10,
         "Page": {
             "cart": "/cart/shoppingCart.do",
             "checkout": "/checkout/anonymousSubmitSet.do"
@@ -11,18 +12,25 @@
                 {
                     "label": "SoldOut",
                     "p": "//div[@class='deliveryMessage']/span[text()='Out of stock for delivery']",
-                    "np":true
+                    "ne":true
                 },
                 {
                     "label": "AddToCart",
                     "p": "//input[@id='addToCartButtonId']",
-                    "c": true
+                    "c": true,
+                    "blocking":[
+                        {
+                            "label": "Popup",
+                            "p": "//div[id='monetate_lightbox_mask']",
+                            "blocking":[{"label":"PopupClose", "p":"//div[contains(@class,'mt-lightbox-close')]", "ne":true,"c":true}],
+                            "ne":true
+                        }
+                    ]
                 },
                 {
                     "label":"Warranty|AddedToCart",
                     "p":"//div[@warranty-test='od-warranty-modal-container']//button[text()='Continue'] | //h3[@id='atc_addedHeading']",
-                    "c":true,
-                    "np":true
+                    "c":true
                 }
                              
             ],
@@ -97,7 +105,7 @@
                 {
                     "label": "AddrNotRecognized",
                     "p":"//div[@role='dialog']//button[@id='continue']",
-                    "np":true,
+                    "ne":true,
                     "c":true
                 },
                 {
@@ -127,9 +135,159 @@
                     "it": "CI.EXPY"
                 },
                 {
-                    "label": "ConfirmOrder",
-                    "p": "//select[@id='checkoutReviewOrderSummaryPlaceOrder']",
+                    "label": "ConfirmCard",
+                    "p": "//button[@data-auid='orderSummary_submit_CheckoutContinue']",
+                    "c":true
+                },
+                {
+                    "label":"Total",
+                    "p":"//td[@data-auid='orderSummary_value_total']"
+                },
+                {
+                    "label":"ConfirmOrder",
+                    "p":"//button[@id='checkoutReviewOrderSummaryPlaceOrder']",
+                    "c":true
+                }
+            ]
+        }
+    },
+    "bestbuy":{
+        "Domain":"https://www.bestbuy.com",
+        "PingRate":1,
+        "Page":{
+            "cart":"/cart",
+            "checkout":"/checkout/r/fulfillment"
+        },
+        "Layout":["cart","checkout"],
+        "Map":{
+            "/site/":[
+                {
+                    "label": "SoldOut",
+                    "p": "//button[@class='btn btn-disabled btn-lg btn-block add-to-cart-button']",
+                    "et": "Sold Out",
+                    "ne":true
+                },
+                {
+                    "label": "AddToCart",
+                    "p": "//button[contains(@class,'add-to-cart-button')]",
+                    "i": "Keys.ENTER",
+                    "c":true
+                },
+                {
+                    "label":"AdddedToCart",
+                    "p":"//span[@class='added-to-cart']",
+                    "blocking":[
+                        {
+                            "label":"FailedToAdd",
+                            "p":"//*[contains(text(),'went wrong')]",
+                            "np":true
+                        }
+                    ]
+                }
+            ],
+            "/cart":[
+                {
+                    "label": "Quantity",
+                    "p": "//select[contains(@id, 'quantity')]",
+                    "et": "1",
+                    "it": "1"
+                },
+                {
+                    "label": "CartEmpty",
+                    "p": "//h1[text()='Your cart is empty']",
+                    "np": true
+                },
+                {
+                    "label": "CheckOut",
+                    "p": "//button[@data-track='Checkout - Top']"
+                }
+            ],
+            "/checkout":[
+                {
+                    "label": "SwitchToPickup",
+                    "p": "//a[contains(@class,'ispu-card__switch')]/span",
+                    "et":"Switch to Pickup",
+                    "blocking":[
+                        {
+                            "label":"SwitchToShipping",
+                            "p": "//a[contains(@class,'ispu-card__switch')]/span[Text()='Switch to Shipping']",
+                            "c":true,
+                            "ne":true
+                        }
+                    ]
+                },
+                {
+                    "label": "FName",
+                    "p": "//input[@id='consolidatedAddresses.ui_address_2.firstName']",
+                    "it": "CI.FName"
+                },
+                {
+                    "label": "LName",
+                    "p": "//input[@id='consolidatedAddresses.ui_address_2.lastName']",
+                    "it": "CI.LName"
+                },
+                {
+                    "label": "Addr",
+                    "p": "//input[@id='consolidatedAddresses.ui_address_2.street']",
+                    "it": "CI.Addr"
+                },
+                {
+                    "label": "City",
+                    "p": "//input[@id='consolidatedAddresses.ui_address_2.city']",
+                    "it": "CI.City"
+                },
+                {
+                    "label": "State",
+                    "p": "//select[@id='consolidatedAddresses.ui_address_2.state']",
+                    "it": "CI.State"
+                },
+                {
+                    "label": "ZIP",
+                    "p": "//input[@id='consolidatedAddresses.ui_address_2.zipcode']",
+                    "it": "CI.ZIP"
+                },
+                {
+                    "label": "Email",
+                    "p": "//input[@id='user.emailAddress']",
+                    "it": "CI.Email"
+                },
+                {
+                    "label": "Phone",
+                    "p": "//input[@id='user.phone']",
+                    "it": "CI.Phone"
+                },
+                {
+                    "label": "ContinueToPayment",
+                    "p": "//button/span[text()='Continue to Payment Information']",
                     "c": true
+                },
+                {
+                    "label":"CC",
+                    "p":"//input[@id='optimized-cc-card-number']",
+                    "it":"CI.CC"
+                },
+                {
+                    "label":"EXPM",
+                    "p":"//select[@name='expiration-month']",
+                    "it":"CI.EXPM"
+                },
+                {
+                    "label":"EXPY",
+                    "p":"//select[@name='expiration-year']",
+                    "it":"CI.EXPY"
+                },
+                {
+                    "label":"CVV",
+                    "p":"//input[@id='credit-card-cvv']",
+                    "it":"CI.CVV"
+                },
+                {
+                    "label":"Total",
+                    "p":"//span[@class='cash-money']"
+                },
+                {
+                    "label":"ConfirmOrder",
+                    "p":"//button[@data-track='Place your Order - Contact Card']"
                 }
             ]
         }
