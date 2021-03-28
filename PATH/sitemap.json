@@ -1,7 +1,19 @@
 {
     "officedepot": {
         "Domain": "https://www.officedepot.com",
-        "PingRate":10,
+        "PingRate":1,
+        "StatusElem":{
+            "InStock":{
+                "p": "//input[@id='addToCartButtonId']"
+            },
+            "OutOfStock":{
+                "p": "//div[@class='deliveryMessage']/span[text()='Out of stock for delivery']",
+                "ne":true
+            },
+            "Price":{
+                "p":"//span[contains(@class,'price_column right')]"
+            }
+        },
         "Page": {
             "cart": "/cart/shoppingCart.do",
             "checkout": "/checkout/anonymousSubmitSet.do"
@@ -10,20 +22,22 @@
         "Map": {
             "/a/products/": [
                 {
-                    "label": "SoldOut",
+                    "label": "OutOfStock",
                     "p": "//div[@class='deliveryMessage']/span[text()='Out of stock for delivery']",
-                    "ne":true
+                    "np":true
                 },
                 {
                     "label": "AddToCart",
                     "p": "//input[@id='addToCartButtonId']",
                     "c": true,
+                    "w": 2,
                     "blocking":[
                         {
-                            "label": "Popup",
-                            "p": "//div[id='monetate_lightbox_mask']",
-                            "blocking":[{"label":"PopupClose", "p":"//div[contains(@class,'mt-lightbox-close')]", "ne":true,"c":true}],
-                            "ne":true
+                            "label":"PopupClose",
+                            "p":"//div[contains(@class,'mt-lightbox-close')]",
+                            "ne":true,
+                            "c":true,
+                            "w": 3
                         }
                     ]
                 },
@@ -43,7 +57,7 @@
                 },
                 {
                     "label": "CheckOut",
-                    "p": "//a[@href='/cart/checkout.do']"
+                    "p": "//*/a[@href='/cart/checkout.do']"
                 }
             ],
             "/checkout/": [
@@ -146,7 +160,7 @@
                 {
                     "label":"ConfirmOrder",
                     "p":"//button[@id='checkoutReviewOrderSummaryPlaceOrder']",
-                    "c":true
+                    "c": true
                 }
             ]
         }
@@ -154,6 +168,18 @@
     "bestbuy":{
         "Domain":"https://www.bestbuy.com",
         "PingRate":1,
+        "StatusElem":{
+            "InStock": {
+                "p": "//button[contains(@class,'add-to-cart-button')]"
+            },
+            "OutOfStock":{
+                "p": "//button[contains(@class,'btn-disabled') and text()='Sold Out']",
+                "ne":true
+            },
+            "Price":{
+                "p":"//div[contains(@class,'priceView-customer-price')]/span[@aria-hidden='true']"
+            }
+        },
         "Page":{
             "cart":"/cart",
             "checkout":"/checkout/r/fulfillment"
@@ -162,9 +188,8 @@
         "Map":{
             "/site/":[
                 {
-                    "label": "SoldOut",
-                    "p": "//button[@class='btn btn-disabled btn-lg btn-block add-to-cart-button']",
-                    "et": "Sold Out",
+                    "label": "OutOfStock",
+                    "p": "//button[contains(@class,'btn-disabled') and text()='Sold Out']",
                     "ne":true
                 },
                 {

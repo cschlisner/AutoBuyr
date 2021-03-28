@@ -1,0 +1,24 @@
+{
+    "officedepot": {
+        "3060": [
+            "https://www.officedepot.com/a/products/8113849/PNY-GeForce-RTX-3060-12GB-XLR8/"
+        ], 
+        "3060ti": [
+            "https://www.officedepot.com/a/products/3973362/PNY-GeForce-RTX-3060-Ti-8GB/",
+            "https://www.officedepot.com/a/products/9801645/PNY-GeForce-RTX-3060-Ti-8GB/"
+        ]
+    },
+    "bestbuy": {
+        "3060ti": [
+            "https://www.bestbuy.com/site/nvidia-geforce-rtx-3060-ti-8gb-gddr6-pci-express-4-0-graphics-card-steel-and-black/6439402.p?skuId=6439402",
+            "https://www.bestbuy.com/site/evga-nvidia-geforce-rtx-3060-ti-ftw3-gaming-8gb-gddr6-pci-express-4-0-graphics-card/6444444.p?skuId=6444444",
+            "https://www.bestbuy.com/site/evga-nvidia-geforce-rtx-3060-ti-ftw3-gaming-8gb-gddr6-pci-express-4-0-graphics-card/6444449.p?skuId=6444449",
+            "https://www.bestbuy.com/site/asus-tuf-rtx3060ti-8gb-gddr6-pci-express-4-0-graphics-card-black/6452573.p?skuId=6452573",
+            "https://www.bestbuy.com/site/evga-nvidia-geforce-rtx-3060-ti-xc-gaming-8gb-gddr6-pci-express-4-0-graphics-card/6444445.p?skuId=6444445",
+            "https://www.bestbuy.com/site/pny-geforce-rtx-3060ti8gb-uprising-dual-fan-graphics-card/6446660.p?skuId=6446660"
+        ],
+        "3070": [
+            "https://www.bestbuy.com/site/nvidia-geforce-rtx-3070-8gb-gddr6-pci-express-4-0-graphics-card-dark-platinum-and-black/6429442.p?skuId=6429442"
+        ]
+    }
+}

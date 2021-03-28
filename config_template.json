@@ -1,0 +1,24 @@
+{
+    "budget":{
+        "3060":450,
+        "3060ti":500,
+        "3070":500
+    },
+    "checkout_info" : {
+        "CC" : "4111111111111111111",
+        "CVV": "123",
+        "EXPM": "08",
+        "EXPY": "2021",
+        "FName" : "FName", 
+        "LName" : "Lname",
+        "Addr": "123 Main St",
+        "State": "CO",
+        "City": "Denver",
+        "ZIP":"80103",
+        "Phone":"1234567891",
+        "Phone1":"123",
+        "Phone2":"456",
+        "Phone3":"7891",
+        "Email":"e@mail.com"
+    }
+}
