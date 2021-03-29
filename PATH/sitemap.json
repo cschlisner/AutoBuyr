@@ -30,21 +30,21 @@
                     "label": "AddToCart",
                     "p": "//input[@id='addToCartButtonId']",
                     "c": true,
-                    "w": 2,
+                    "w": 3,
                     "blocking":[
                         {
                             "label":"PopupClose",
                             "p":"//div[contains(@class,'mt-lightbox-close')]",
                             "ne":true,
                             "c":true,
-                            "w": 3
+                            "w": 2
                         }
                     ]
                 },
                 {
                     "label":"Warranty|AddedToCart",
-                    "p":"//div[@warranty-test='od-warranty-modal-container']//button[text()='Continue'] | //h3[@id='atc_addedHeading']",
-                    "c":true
+                    "p":"//div[@warranty-test='od-warranty-modal-container']//button[text()='Continue'] | //h3[@id='atc_addedHeading'] | //h3[@class='success-heading']",
+                    "w":3
                 }
                              
             ],
@@ -57,7 +57,8 @@
                 },
                 {
                     "label": "CheckOut",
-                    "p": "//*/a[@href='/cart/checkout.do']"
+                    "p": "//a[@href='/cart/checkout.do']",
+                    "w": 5
                 }
             ],
             "/checkout/": [
@@ -195,17 +196,20 @@
                 {
                     "label": "AddToCart",
                     "p": "//button[contains(@class,'add-to-cart-button')]",
-                    "i": "Keys.ENTER",
-                    "c":true
+                    "c": true,
+                    "w": 2
                 },
                 {
-                    "label":"AdddedToCart",
+                    "label":"AddedToCart",
                     "p":"//span[@class='added-to-cart']",
+                    "w": 1,
+                    "ne": true,
                     "blocking":[
                         {
                             "label":"FailedToAdd",
-                            "p":"//*[contains(text(),'went wrong')]",
-                            "np":true
+                            "p":"//p[text()='There was a problem adding your product to cart.']",
+                            "np":true,
+                            "w": 1
                         }
                     ]
                 }
@@ -224,7 +228,8 @@
                 },
                 {
                     "label": "CheckOut",
-                    "p": "//button[@data-track='Checkout - Top']"
+                    "p": "//button[@data-track='Checkout - Top']",
+                    "w": 5
                 }
             ],
             "/checkout":[
@@ -232,6 +237,7 @@
                     "label": "SwitchToPickup",
                     "p": "//a[contains(@class,'ispu-card__switch')]/span",
                     "et":"Switch to Pickup",
+                    "w": 1,
                     "blocking":[
                         {
                             "label":"SwitchToShipping",
@@ -308,7 +314,7 @@
                 },
                 {
                     "label":"Total",
-                    "p":"//span[@class='cash-money']"
+                    "p":"//div[@class='order-summary__total']//span[@class='cash-money']"
                 },
                 {
                     "label":"ConfirmOrder",

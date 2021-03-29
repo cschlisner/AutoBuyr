@@ -24,13 +24,12 @@ from Site import Site
 
 
 class SiteMonitor(threading.Thread):
-    AUTO_PURCHASE = False
-    BOUGHT = False
-
     def __init__(self, headless, urls, auto_buy=False, budget=None, debug=False, checkout=None):
         threading.Thread.__init__(self)
         self.purchasing = None
         self.AUTO_PURCHASE = auto_buy
+        self.BOUGHT = None
+        self.STATUS = ""
         self.purchase_total = ''
         self.checkout_info = checkout
         self.driver = self.get_web_driver(headless)
@@ -53,7 +52,8 @@ class SiteMonitor(threading.Thread):
         self.site = Site(self.domain)
         self.driver.get(self.site.domain)
         self.driver.minimize_window()
-        self.stopped = False
+        self.stopped = threading.Event()
+        self.exited = False
         self.debug = debug
 
     @staticmethod
@@ -61,57 +61,63 @@ class SiteMonitor(threading.Thread):
         if driver == "chrome":
             chromeOptions = webdriver.ChromeOptions()
             chromeOptions.headless = headless
-            broswer = webdriver.Chrome(executable_path=str(pathlib.Path(__file__).parent.absolute())+"/driver/chromedriver.exe", options=chromeOptions)
+            broswer = webdriver.Chrome(
+                executable_path=str(pathlib.Path(__file__).parent.absolute()) + "/driver/chromedriver.exe",
+                options=chromeOptions)
         elif driver == "phantomjs":
-            broswer = webdriver.PhantomJS(executable_path=str(pathlib.Path(__file__).parent.absolute())+"/driver/phantomjs.exe")
+            broswer = webdriver.PhantomJS(
+                executable_path=str(pathlib.Path(__file__).parent.absolute()) + "/driver/phantomjs.exe")
         else:  # "firefox"
             fireFoxOptions = webdriver.FirefoxOptions()
             fireFoxOptions.headless = headless
-            broswer = webdriver.Firefox(executable_path=str(pathlib.Path(__file__).parent.absolute())+"/driver/geckodriver.exe", options=fireFoxOptions)
+            broswer = webdriver.Firefox(
+                executable_path=str(pathlib.Path(__file__).parent.absolute()) + "/driver/geckodriver.exe",
+                options=fireFoxOptions)
         return broswer
-
-    def in_stock_wd(self, url):
-        try:
-            # self.site.map[page][0] will always be the sold out element 
-            e = self.driver.find_element_by_xpath(self.site.map[self.site.product_page][0]["p"])
-            return e == None
-        except NoSuchElementException as e:
-            self.info = "No Such Element: " + self.site.map[self.site.product_page][0]['p']
-            return True
 
     def in_stock_req(self, url):
         try:
-            self.alert(url, "Updating...")
+            self.alert(url, ".")
             pricet = None
             page = self.site.load_url(url)
+            self.alert(url, "..")
+
             self.URL[url]['exc'] = ""
 
-            timeout = [] if "Timeout" not in self.site.stat else self.site.element_exists(self.site.stat['Timeout'], tree=page)
+            timeout = [] if "Timeout" not in self.site.stat else self.site.element_exists(self.site.stat['Timeout'],
+                                                                                          tree=page)
             if not timeout:
 
-                outofstock = [] if "OutOfStock" not in self.site.stat else self.site.element_exists(self.site.stat["OutOfStock"], tree=page)
-                instock = [0] if "InStock" not in self.site.stat else self.site.element_exists(self.site.stat["InStock"], tree=page)
-                price = [] if "Price" not in self.site.stat else self.site.element_exists(self.site.stat["Price"], tree=page)
+                outofstock = None if "OutOfStock" not in self.site.stat else self.site.element_exists(
+                    self.site.stat["OutOfStock"], tree=page)
+                instock = None if "InStock" not in self.site.stat else self.site.element_exists(
+                    self.site.stat["InStock"], tree=page)
+                price = None if "Price" not in self.site.stat else self.site.element_exists(self.site.stat["Price"],
+                                                                                            tree=page)
+                pricet = None if price is None else self.site.get_element_text(price)
+                in_stock = (instock is not None) and (outofstock is None)
+                # self.alert(url,
+                #            f"{outofstock}{instock}{price}{in_stock}.{price.text}{price.text_content()}{price.get('value')}=>{pricet}({self.site.get_element_text(price)}")
 
-                in_stock = instock and not outofstock
-
-                pricet = None if not price else self.site.get_element_text(price[0])
-                self.alert(url, f"{url if in_stock else ''}", in_stock, price=pricet)
+                self.alert(url, f"{url if in_stock else '--'}", in_stock, price=pricet)
 
                 # IN STOCK AND SET TO PURCHASE
-                if self.purchasing is None and in_stock:
+                if self.purchasing is None and in_stock and "purchased" not in self.URL[url]:
                     self.driver.get(url)
                     self.driver.save_screenshot(f"scrn/{self.domain}-{self.URL[url]['prod']}-INSTOCK.png")
                     if self.AUTO_PURCHASE and self.price_check(url):
                         # self.alert(url, "Now in stock", True)
                         self.purchasing = url
+                        for queued in self.URL:
+                            self.alert(queued, f"Waiting on {url}")
                         try:
                             self.URL[url]['exc'] = ""
                             p = self.attempt_buy(url)
                             if p:
-                                self.BOUGHT = True,
-                                self.alert(url, "PURCHASED {} for {}".format(self.URL[url]['prod'], self.purchase_total))
-                                self.kill()
+                                self.BOUGHT = url
+                                self.URL[url]['purchased']=self.purchase_total
+                                self.alert(url,
+                                           "PURCHASED {} for {}".format(self.URL[url]['prod'], self.purchase_total))
                                 return False
                             else:
                                 self.alert(url, "Purchase Failed", False)
@@ -125,16 +131,21 @@ class SiteMonitor(threading.Thread):
                             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
                             with open("log/exc_{}.txt".format(self.domain), "a") as f:
                                 f.write(datetime.now().strftime('%a-%b-%d-%H-%M-%S\n'))
-                                f.write(url+"\n")
+                                f.write(url + "\n")
                                 f.write(f"Err: {self.URL[url]['exc']}\n")
                                 traceback.print_exc(file=f)
                                 f.write("".join(["-" for i in range(30)]))
 
-                            self.alert(url, "Purchase Failed", False)
+                            self.alert(url, "Purchase Failed")
                             self.purchasing = None
                             self.URL[url]['exc'] = "{}:{} in {} @ {}".format(exc_type, exc_obj, fname,
                                                                              exc_tb.tb_lineno)
                             self.driver.save_screenshot("scrn/error/{}.png".format(self.domain))
+                            try:
+                                with open("scrn/error/{}_pagedump.txt".format(self.domain), "w") as f:
+                                    f.write(self.driver.page_source)
+                            except:
+                                pass
                             self.driver.minimize_window()
                             self.driver.delete_all_cookies()
             else:
@@ -148,10 +159,13 @@ class SiteMonitor(threading.Thread):
                 traceback.print_exc(file=f)
                 f.write("".join(["-" for i in range(30)]))
 
-    def alert(self, url, msg, stat=None, price=None):
-        self.URL[url]['info'] = msg
-        self.URL[url]['status'] = self.URL[url]['status'] if stat is None else stat
-        self.URL[url]['price'] = str(price) if price is not None else self.URL[url]['price']
+    def purchase_alert(self, prod):
+        pass
+
+    def alert(self, url, msg=None, stat=None, price=None):
+        self.URL[url]['info'] = msg if msg else self.URL[url]['info']
+        self.URL[url]['status'] = stat if stat else self.URL[url]['status']
+        self.URL[url]['price'] = str(price) if price else self.URL[url]['price']
         if self.debug:
             print(msg)
 
@@ -170,39 +184,45 @@ class SiteMonitor(threading.Thread):
             return False
 
     def run(self):
-        while not self.stopped and not self.BOUGHT:
+        while not self.stopped.is_set():
             try:
+                if self.BOUGHT:
+                    # remove purchased url from our list to check
+                    self.purchase_alert(self.URL[self.BOUGHT])
+                    self.BOUGHT = None
+
                 sleep(self.site.ping)
                 urlThreads = []
                 for url in self.URL:
                     self.URL[url]['exc'] = ""
-                    urlt = threading.Thread(target=self.in_stock_req, args=(url,))
-                    urlThreads.append(urlt)
-                    urlt.start()
+                    if "purchased" not in self.URL[url]:
+                        self.URL[url]['info'] = ""
+                        urlt = threading.Thread(target=self.in_stock_req, args=(url,))
+                        urlThreads.append((url,urlt))
+                        urlt.start()
 
                 for t in urlThreads:
-                    t.join()
+                    t[1].join()
                     if self.stopped:
                         return
-
+                    self.alert(t[0],"")
+            except KeyboardInterrupt:
+                break
             except Exception as e:
                 with open("log/exc_{}.txt".format(self.domain), "a") as f:
                     f.write(datetime.now().strftime('%a-%b-%d-%H-%M-%S\n'))
                     traceback.print_exc(file=f)
                     f.write("".join(["-" for i in range(30)]))
-                self.kill()
 
-    def kill(self):
-        self.stopped = True
-        print(f"Killing Monitor {self.domain}")
-
+        ## thread stopped
+        for u in self.URL:
+            self.alert(u, "Shutting Down...")
         # if self.driver.firefox_binary:
         #     print(f"killing binary({self.domain})")
         #     self.driver.firefox_binary.kill()
 
         # none of the api methods work so...
         # self.driver.quit()
-        self.driver.close()
         # self.driver.stop_client()
         # self.driver.service.stop()
         # print(f"({self.domain}) killing parent: {p.parent().pid} {p.parent().as_dict()}")
@@ -210,18 +230,38 @@ class SiteMonitor(threading.Thread):
         # p.terminate()
         # print(os.system(f"taskkill /F /PID {p.parent().pid}"))
         # print(os.system(f"taskkill /F /PID {self.driver.service.process.pid}"))
-        print(f"Monitor {self.domain} quit successfully?")
+        self.STATUS = f"({self.domain}) Attempting to stop service: {self.driver.service} PID {self.driver.service.process.pid}"
+        try:
+            self.driver.service.stop()
+        except:
+            self.STATUS = f"({self.domain}) service stop failed -- {sys.exc_info()[0]} Attempting to close browser {self.driver}"
+            try:
+                self.driver.close()
+            except:
+                self.STATUS = f"({self.domain}) closing browser failed -- {sys.exc_info()[0]} Attempting to quit browser {self.driver}"
+                try:
+                    self.driver.quit()
+                except:
+                    self.STATUS = f"({self.domain}) driver close failed -- fuck it\n{os.system('taskkill /F /IM Firefox.exe')}"
+                    sys.exit()
+        for u in self.URL:
+            self.alert(u, "DEAD")
+        self.STATUS = f"Monitor {self.domain} quit successfully?"
+        self.exited = True
+
+    def kill(self):
+        self.stopped.set()
 
     @staticmethod
     def clean_price(price):
         return ''.join(c for c in price if c.isnumeric() or c == '.')
 
     def process_elem(self, url, element):
-        self.alert(url, "proc({})".format(element["label"]))
-        ac = ActionChains(self.driver)
         if "blocking" in element:
             for b_e in element["blocking"]:
                 self.process_elem(url, b_e)
+        self.alert(url, "proc({})".format(element["label"]))
+        ac = ActionChains(self.driver)
 
         xpath = element["p"]
         click = "c" in element and element["c"]
@@ -236,28 +276,31 @@ class SiteMonitor(threading.Thread):
         if "iframe" in element:
             self.driver.switch_to.frame(element["iframe"])
 
-        if "w" in element:
-            sleep(element["w"])
+        if "sleep" in element:
+            sleep(element["sleep"])
 
         try:
-            if click or inputText:
-                el = self.site.element_exists(element, driver=self.driver, timeout=1 if (notPresent or notExpected) else 5)
+            # if the element is dynamic or we need to interact with it, use driver wait
+            if click or inputText or "w" in element:
+                w = 0 if "w" not in element else element['w']
+                el = self.site.element_exists(element, driver=self.driver,
+                                              timeout=(1 if (notPresent or notExpected) else 5)+w)
                 try:
                     ac.move_to_element(el).perform()
                 except:
                     pass
-            else:
+            else:  # otherwise we can just find it in the page source quicker
                 el = self.site.element_exists(element, tree=html.fromstring(self.driver.page_source))
-                assert el
+                if el is None:
+                    raise AssertionError(el)
         except Exception as e:
             if notExpected or notPresent:
                 return
             else:
-                raise Exception(element['label'], sys.exc_info()[0])
+                raise Exception(element['label'], (sys.exc_info()[0],sys.exc_info()[1]))
 
         if notPresent:
             raise Exception("Element {} found when not expected.".format(element["label"]))
-
 
         # screenshot if debug
         if self.debug:
@@ -286,22 +329,26 @@ class SiteMonitor(threading.Thread):
 
                 for k in inputText:
                     el.send_keys(k)
+            el.send_keys(KeyStr['TAB'])
+            sleep(1)
 
         if expectedText is not None:
-            assert self.site.get_element_text(el) == expectedText
+
+            if self.site.get_element_text(el) != expectedText:
+                raise AssertionError(self.site.get_element_text(el), expectedText)
+
+        if element["label"] == "Total":
+            self.purchase_total = self.site.get_element_text(el)
 
         if click:
             if element["label"] == "ConfirmOrder":
-                if self.debug:
+                if self.debug or self.URL[url]['prod'] == 'test':
                     return
                 self.alert(url, "ATTEMPTING PURCHASE")
             WebDriverWait(self.driver, 30).until(
                 ec.element_to_be_clickable((By.XPATH, xpath))
             )
             el.click()
-
-        if element["label"] == "Total":
-            self.purchase_total = self.site.get_element_text(el)
 
         if "iframe" in element:
             self.driver.switch_to.default_content()
@@ -324,9 +371,10 @@ class SiteMonitor(threading.Thread):
                             raise e
                         if element["label"] == "ConfirmOrder":
                             purchase_complete = True
-                            self.driver.save_screenshot("scrn/PurchaseComplete.png")
+                            self.driver.save_screenshot(f"scrn/PurchaseComplete-{self.domain}-{self.URL[url]['prod']}-{datetime.now().strftime('%a-%b-%d-%H-%M-%S')}.png")
                             return True
-                    if pagei < len(self.site.layout):
+                    if pagei < len(self.site.layout) and self.site.page[
+                        self.site.layout[pagei]] not in self.driver.current_url:
                         self.driver.get(self.site.url(pagei))
                     sleep(2)
                     pagei += 1

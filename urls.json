@@ -1,5 +1,8 @@
 {
     "officedepot": {
+        "test": [
+            "https://www.officedepot.com/a/products/664011/BIC-Round-Stic-Ballpoint-Pens-Medium/"
+        ],
         "3060": [
             "https://www.officedepot.com/a/products/8113849/PNY-GeForce-RTX-3060-12GB-XLR8/"
         ], 
@@ -9,6 +12,9 @@
         ]
     },
     "bestbuy": {
+        "test": [
+            "https://www.bestbuy.com/site/hot-wheels-worldwide-basic-car-styles-may-vary/6151804.p?skuId=6151804"
+        ],
         "3060ti": [
             "https://www.bestbuy.com/site/nvidia-geforce-rtx-3060-ti-8gb-gddr6-pci-express-4-0-graphics-card-steel-and-black/6439402.p?skuId=6439402",
             "https://www.bestbuy.com/site/evga-nvidia-geforce-rtx-3060-ti-ftw3-gaming-8gb-gddr6-pci-express-4-0-graphics-card/6444444.p?skuId=6444444",

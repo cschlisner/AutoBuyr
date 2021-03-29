@@ -71,7 +71,8 @@ class Site:
                 ec.presence_of_element_located((By.XPATH, element["p"]))
             )
         elif html:
-            return tree.xpath(element["p"])
+            e = tree.xpath(element["p"])
+            return None if e==[] else e[0]
 
     """"
     figures out what type of html element you have and gets the text from it. 
@@ -79,7 +80,10 @@ class Site:
     """
     def get_element_text(self, element):
         if type(element) == html.HtmlElement:
-            return element.text_content()
+            t = element.text
+            tc = element.text_content()
+            v = element.get('value')
+            return t if t else tc if tc else v
         elif type(element) == FirefoxWebElement:
             if element.tag_name in ["input", "select"]:
                 return element.get_attribute('value')
