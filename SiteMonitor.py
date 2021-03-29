@@ -128,7 +128,9 @@ class SiteMonitor(threading.Thread):
                                 self.URL[url]['purchased']=self.purchase_total
                                 self.URL[url]['purchasing'] = False
                                 self.alert(url,
-                                           "PURCHASED {} for {}\a".format(self.URL[url]['prod'], self.purchase_total))
+                                           "PURCHASED {} for {}".format(self.URL[url]['prod'], self.purchase_total))
+                                print('\a')
+
                                 return False
                             else:
                                 self.alert(url, "Purchase Failed", False)
