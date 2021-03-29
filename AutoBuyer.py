@@ -187,11 +187,18 @@ def test_main():
             for p in monitor_url[site]:
                 urlc += len(monitor_url[site][p])
 
-    # for monitor in monitors:
-    #     monitor.start()
+    for monitor in monitors:
+        monitor.start()
 
     monitor_display = MonitorDisplay(monitors)
-    monitor_display.run()
+    monitors_alive = monitors
+    while len(monitors_alive) > 0:
+        try:
+
+            monitor_display.run()
+        except KeyboardInterrupt:
+            for m in monitors:
+                m.kill()
 
 
 if __name__ == '__main__':

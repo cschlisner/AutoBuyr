@@ -52,7 +52,6 @@ class SiteMonitor(threading.Thread):
                     'in_budget':False
                 }
         self.site = Site(self.domain)
-        self.driver.get(self.site.domain)
         self.driver.minimize_window()
         self.stopped = threading.Event()
         self.exited = False
@@ -60,29 +59,36 @@ class SiteMonitor(threading.Thread):
 
     @staticmethod
     def get_web_driver(headless, driver=""):
-        if driver == "chrome":
-            chromeOptions = webdriver.ChromeOptions()
-            chromeOptions.headless = headless
-            broswer = webdriver.Chrome(
-                executable_path=str(pathlib.Path(__file__).parent.absolute()) + "/driver/chromedriver.exe",
-                options=chromeOptions)
-        elif driver == "phantomjs":
-            broswer = webdriver.PhantomJS(
-                executable_path=str(pathlib.Path(__file__).parent.absolute()) + "/driver/phantomjs.exe")
-        else:  # "firefox"
+        if sys.platform == 'win32':
+            if driver == "chrome":
+                chromeOptions = webdriver.ChromeOptions()
+                chromeOptions.headless = headless
+                broswer = webdriver.Chrome(
+                    executable_path=str(pathlib.Path(__file__).parent.absolute()) + "/driver/chromedriver.exe",
+                    options=chromeOptions)
+            elif driver == "phantomjs":
+                broswer = webdriver.PhantomJS(
+                    executable_path=str(pathlib.Path(__file__).parent.absolute()) + "/driver/phantomjs.exe")
+            else:  # "firefox"
+                fireFoxOptions = webdriver.FirefoxOptions()
+                fireFoxOptions.headless = headless
+                broswer = webdriver.Firefox(
+                    executable_path=str(pathlib.Path(__file__).parent.absolute()) + "/driver/geckodriver.exe",
+                    options=fireFoxOptions)
+        else:
             fireFoxOptions = webdriver.FirefoxOptions()
             fireFoxOptions.headless = headless
             broswer = webdriver.Firefox(
-                executable_path=str(pathlib.Path(__file__).parent.absolute()) + "/driver/geckodriver.exe",
+                executable_path=str(pathlib.Path(__file__).parent.absolute()) + "/driver/geckodriver-linux",
                 options=fireFoxOptions)
         return broswer
 
     def in_stock_req(self, url):
         try:
-            self.alert(url, ".")
+            self.alert(url, "/")
             pricet = None
             page = self.site.load_url(url)
-            self.alert(url, "..")
+            self.alert(url, "-")
 
             self.URL[url]['exc'] = ""
 
@@ -101,7 +107,7 @@ class SiteMonitor(threading.Thread):
                 # self.alert(url,
                 #            f"{outofstock}{instock}{price}{in_stock}.{price.text}{price.text_content()}{price.get('value')}=>{pricet}({self.site.get_element_text(price)}")
 
-                self.alert(url, f"{url if in_stock else '--'}", in_stock, price=pricet)
+                self.alert(url, url if in_stock else '\\', in_stock, price=pricet)
 
                 # IN STOCK AND SET TO PURCHASE
                 if self.purchasing is None and in_stock and "purchased" not in self.URL[url]:
@@ -121,7 +127,7 @@ class SiteMonitor(threading.Thread):
                                 self.URL[url]['purchased']=self.purchase_total
                                 self.URL[url]['purchasing'] = False
                                 self.alert(url,
-                                           "PURCHASED {} for {}".format(self.URL[url]['prod'], self.purchase_total))
+                                           "PURCHASED {} for {}\a".format(self.URL[url]['prod'], self.purchase_total))
                                 return False
                             else:
                                 self.alert(url, "Purchase Failed", False)
@@ -172,13 +178,13 @@ class SiteMonitor(threading.Thread):
         self.URL[url]['info'] = msg if msg else self.URL[url]['info']
         self.URL[url]['status'] = stat if stat else self.URL[url]['status']
         self.URL[url]['price'] = str(price) if price else self.URL[url]['price']
+        self.URL[url]['exc']=""
         if self.debug:
             print(msg)
 
     def err(self, url, msg):
         self.URL[url]['exc'] = msg
         self.URL[url]['status'] = False
-        self.URL[url]['info'] = ""
         if self.debug:
             print(msg)
 
@@ -192,6 +198,7 @@ class SiteMonitor(threading.Thread):
 
     def run(self):
         while not self.stopped.is_set():
+            self.STATUS = "Running."
             try:
                 if self.BOUGHT:
                     # remove purchased url from our list to check
@@ -203,18 +210,15 @@ class SiteMonitor(threading.Thread):
                 for url in self.URL:
                     self.URL[url]['exc'] = ""
                     if "purchased" not in self.URL[url]:
-                        self.URL[url]['info'] = ""
+                        self.alert(url, "|")
                         urlt = threading.Thread(target=self.in_stock_req, args=(url,))
                         urlThreads.append((url,urlt))
                         urlt.start()
 
                 for t in urlThreads:
                     t[1].join()
-                    if self.stopped:
-                        return
-                    self.alert(t[0],"")
-            except KeyboardInterrupt:
-                break
+                    self.alert(t[0],"*")
+
             except Exception as e:
                 with open("log/exc_{}.txt".format(self.domain), "a") as f:
                     f.write(datetime.now().strftime('%a-%b-%d-%H-%M-%S\n'))
@@ -223,7 +227,9 @@ class SiteMonitor(threading.Thread):
 
         ## thread stopped
         for u in self.URL:
-            self.alert(u, "Shutting Down...")
+            self.alert(u, "Stopped.")
+            self.err(u,"")
+
         # if self.driver.firefox_binary:
         #     print(f"killing binary({self.domain})")
         #     self.driver.firefox_binary.kill()
@@ -252,11 +258,12 @@ class SiteMonitor(threading.Thread):
                     self.STATUS = f"({self.domain}) driver close failed -- fuck it\n{os.system('taskkill /F /IM Firefox.exe')}"
                     sys.exit()
         for u in self.URL:
-            self.alert(u, "DEAD")
+            self.alert(u, "MONITOR DEAD")
         self.STATUS = f"Monitor {self.domain} quit successfully?"
         self.exited = True
 
     def kill(self):
+        self.STATUS = "Killed."
         self.stopped.set()
 
     @staticmethod

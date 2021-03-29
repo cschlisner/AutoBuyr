@@ -21,87 +21,68 @@ def col(string, c):
     return colors[c] + string + colors["ENDC"]
 
 class MonitorDisplay:
-    def __init__(self, monitors):
+    def __init__(self, monitors, spacing=20):
         self.monitors = monitors
+        self.space = spacing
         self.stopped=False
 
-    def show(self):
-        urlc = sum([len(m.URL) for m in self.monitors])
-        exitc=0
-        with output(initial_len=urlc + 1, interval=50) as output_lines:
-            output_lines[0] = f"Monitor\t\t\t\t|\t\tProduct\t\t|\t\tPrice|\t\tStatus\t\t|\t\tInfo|Error\t\t|Threads:{threading.activeCount()}"
-            try:
-                while exitc < len(monitors):
-                    i = 1
-                    monitors_alive = [m for m in monitors if not m.exited]
-                    if len(monitors_alive) < len(monitors):
-                        monitors = monitors_alive
-                        ol = [output_lines[0]]
-                        for m in monitors:
-                            ol.append(["....." for u in m.URL])
-                            if len(output_lines) > urlc + 1:
-                                ol.append(output_lines[urlc + 1:])
-                        output_lines.change(ol)
-                    for m in monitors:
-
-                        for u in m.URL:
-                            instock = col("IN STOCK", "green") if m.URL[u]['status'] else col("OUT OF STOCK", "red")
-                            instock = col("!!!! PURCHASE INITIATED !!!!", "green") if m.purchasing == u and m.URL[u][
-                                'status'] else instock
-                            exc = col(m.URL[u]['exc'], "red")
-                            if "purchased" in m.URL[u] and m.URL[u]['prod'] == "test":
-                                exc = col("Test passed.", "blue")
-                            output_lines[i] = "{}\t|\t\t{}\t\t|\t\t{}\t\t|\t{}\t|{}|{}".format(
-                                m.domain,
-                                col(m.URL[u]['prod'], "bold"),
-                                col(m.URL[u]['price'], "cyan" if m.price_check(u) else "yellow"),
-                                instock,
-                                col(m.URL[u]['info'], "yellow" if "purchased" not in m.URL[u] else "blue"),
-                                exc
-                            )
-                            i += 1
-                        if m.exited:
-                            exitc += 1
-                            if len(output_lines) > i:
-                                output_lines[i] = m.STATUS
-                                i += 1
-            except KeyboardInterrupt:
-                output_lines.append(col("Killing all monitors!", "red"))
-                for m in monitors:
-                    try:
-                        m.kill()
-                    except:
-                        output_lines.append(m.STATUS)
-                        print(os.system(f"taskkill /F /IM Firefox.exe"))
-                        exit(0)
-                    output_lines.append(m.STATUS)
+    def sp(self, txt, char_count=None):
+        if not char_count:
+            char_count=self.space + (8 if '\033' in txt else 0)
+        return ''.join([" " for s in range(char_count-len(txt))])
 
     def format_url(self, url):
+        i = url[0]
+        url = url[1]
+        m = 20
+
+        domain = url[0].split(".")[1]
+        prod = col(url[1]['prod'], "bold")
+        price = col(url[1]['price'], "cyan" if url[1]['in_budget'] else "yellow")
         instock = col("IN STOCK", "green") if url[1]['status'] else col("OUT OF STOCK", "red")
         instock = col("!!!! ATTEMPTING PURCHASE !!!!", "green") if url[1]['purchasing'] and url[1]['status'] else instock
-        exc = col(url[1]['exc'], "red")
+        info = col(url[1]['info'], "yellow" if "purchased" not in url[1] else "blue")
+        exc = col(url[1]['exc'][:self.space], "red")
         if "purchased" in url[1] and url[1]['prod'] == "test":
             exc = col("Test passed.", "blue")
-        return "{}\t\t|\t\t{}\t\t|\t{}\t|{}|{}".format(
-            url[0].split(".")[1],
-            col(url[1]['prod'], "bold"),
-            col(url[1]['price'], "cyan" if url[1]['in_budget'] else "yellow"),
-            instock,
-            col(url[1]['info'], "yellow" if "purchased" not in url[1] else "blue"),
-            exc
-        )
+        ln = [prod,price,instock,info]
+        output = f"{self.sp(str(i)+': ',len('_Monito')+len(str(i)))} {domain} {self.sp(domain)}|\t\t"+''.join(f"{i} {self.sp(i)}|\t\t" for i in ln)+f"{exc}"
+        return output
 
     def run(self):
         urls = []
-        for m in self.monitors:
-            urls.extend(list(map(lambda u: (u, m.URL[u]), m.URL)))
-        urls = enumerate(urls)
-        with output(output_type="dict", interval=50, sort_key=lambda x:"_" in x[0]) as output_lines:
-            output_lines['_Monitor'] = f"Domain\t\t\t\t|\t\tProduct\t\t|\t\tPrice|\t\tStatus\t\t|\t\tInfo|Error\t\t|Threads:{threading.activeCount()}"
-            while not self.stopped:
-                for u in urls:
-                    output_lines[str(u[0])]=self.format_url(u[1])
-                output_lines['_Status']="OK"
+        columns = ["Domain","Products","Price","Status","Info","Error"]
+        with output(output_type="dict", interval=50, sort_key=lambda x:"_Status" not in x[0] or "_" not in x[0]) as output_lines:
+            try:
+                output_lines.clear()
+                output_lines['_Monitor'] = ''.join(f"{c} {self.sp(c)}|\t\t" for c in columns)
+                while not self.stopped:
+                    urls.clear()
+                    for m in self.monitors:
+                        urls.extend(list(map(lambda u: (u, m.URL[u]), m.URL)))
+                    for u in enumerate(urls):
+                        output_lines[str(u[0])]=self.format_url(u)
+                    output_lines[col('_Status_','header')]="".join([f"{m.domain}:{m.STATUS} |" for m in self.monitors])
+            except:
+                output_lines.clear()
+                output_lines.append(col("Stopping Monitors!", "red"))
+                for m in self.monitors:
+                    m.kill()
+                monitors_exited = self.monitors
+                while len(monitors_exited) > 0:
+                    for m in monitors_exited:
+                        if m.exited:
+                            output_lines.append(col(f"Monitor {m.domain} stopped.", "green"))
+                            monitors_exited.remove(m)
+
+                raise
+
+    def reset(self):
+        with output(interval=50) as output_lines:
+            output_lines.clear()
+            output_lines.append(col("Stopping Monitors!", "red"))
+
 
     def kill(self):
         self.stopped=True
+
