@@ -47,7 +47,9 @@ class SiteMonitor(threading.Thread):
                     'info': '',
                     'price': '',
                     'exc': '',
-                    'prod': p
+                    'prod': p,
+                    'purchasing':False,
+                    'in_budget':False
                 }
         self.site = Site(self.domain)
         self.driver.get(self.site.domain)
@@ -112,10 +114,12 @@ class SiteMonitor(threading.Thread):
                             self.alert(queued, f"Waiting on {url}")
                         try:
                             self.URL[url]['exc'] = ""
+                            self.URL[url]['purchasing']=True
                             p = self.attempt_buy(url)
                             if p:
                                 self.BOUGHT = url
                                 self.URL[url]['purchased']=self.purchase_total
+                                self.URL[url]['purchasing'] = False
                                 self.alert(url,
                                            "PURCHASED {} for {}".format(self.URL[url]['prod'], self.purchase_total))
                                 return False
@@ -138,6 +142,8 @@ class SiteMonitor(threading.Thread):
 
                             self.alert(url, "Purchase Failed")
                             self.purchasing = None
+                            self.URL[url]['purchasing'] = False
+
                             self.URL[url]['exc'] = "{}:{} in {} @ {}".format(exc_type, exc_obj, fname,
                                                                              exc_tb.tb_lineno)
                             self.driver.save_screenshot("scrn/error/{}.png".format(self.domain))
@@ -178,8 +184,9 @@ class SiteMonitor(threading.Thread):
 
     def price_check(self, url):
         try:
-            return self.budget is not None and float(self.clean_price(self.URL[url]['price'])) <= self.budget[
-                self.URL[url]['prod']]
+            if self.budget is not None and float(self.clean_price(self.URL[url]['price'])) <= self.budget[self.URL[url]['prod']]:
+                self.URL[url]['in_budget']=True
+                return self.URL[url]['in_budget']
         except:
             return False
 

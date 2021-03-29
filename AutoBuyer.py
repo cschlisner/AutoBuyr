@@ -1,6 +1,7 @@
 import errno
 import pathlib
 
+from MonitorDisplay import MonitorDisplay
 from SiteMonitor import SiteMonitor
 
 import sys, os, time, random
@@ -141,9 +142,60 @@ def main():
         print(os.system(f"taskkill /F /IM Firefox.exe"))
         exit(0)
 
+def handle_dirs():
+    thisdir = str(pathlib.Path(__file__).parent.absolute())
+    logdirs = [thisdir + d for d in ["/scrn/error/", "/log/"]]
+    for d in logdirs:
+        if not os.path.exists(os.path.dirname(d)):
+            try:
+                os.makedirs(os.path.dirname(d))
+            except OSError as exc:
+                if exc.errno != errno.EEXIST:
+                    raise
+
+
+def test_main():
+    handle_dirs()
+    checkout_info = {}
+    budget = {}
+    monitor_url = {}
+    debug = False
+    headless = True
+    if "--debug" in sys.argv:
+        debug = True
+    if "--gui" in sys.argv:
+        headless = False
+
+    if os.path.exists("config.json"):
+        with open("config.json", "r") as f:
+            cfg = json.load(f)
+            checkout_info = cfg['checkout_info']
+            budget = cfg['budget']
+
+    if os.path.exists("urls.json"):
+        with open("urls.json", "r") as f:
+            monitor_url = json.load(f)
+
+    urlc = 0
+
+    monitors = []
+    with output(output_type="dict", interval=50) as output_lines:
+        for site in monitor_url:
+            output_lines[site] = "starting monitor...."
+            monitors.append(SiteMonitor(headless, monitor_url[site], auto_buy=False, debug=debug, budget=budget,
+                                        checkout=checkout_info))
+            for p in monitor_url[site]:
+                urlc += len(monitor_url[site][p])
+
+    # for monitor in monitors:
+    #     monitor.start()
+
+    monitor_display = MonitorDisplay(monitors)
+    monitor_display.run()
+
 
 if __name__ == '__main__':
     try:
-        main()
+        test_main()
     except KeyboardInterrupt:
         exit(0)
