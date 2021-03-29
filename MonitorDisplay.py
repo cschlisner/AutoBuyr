@@ -28,7 +28,7 @@ class MonitorDisplay:
 
     def sp(self, txt, char_count=None):
         if not char_count:
-            char_count=self.space + (8 if '\033' in txt else 0)
+            char_count=self.space + (0 if '\033' not in txt else 8 if '[1m' in txt else 9)
         return ''.join([" " for s in range(char_count-len(txt))])
 
     def format_url(self, url):
@@ -46,7 +46,7 @@ class MonitorDisplay:
         if "purchased" in url[1] and url[1]['prod'] == "test":
             exc = col("Test passed.", "blue")
         ln = [prod,price,instock,info]
-        output = f"{self.sp(str(i)+': ',len('_Monito')+len(str(i)))} {domain} {self.sp(domain)}|\t\t"+''.join(f"{i} {self.sp(i)}|\t\t" for i in ln)+f"{exc}"
+        output = f"{self.sp(str(i)+':',len('_Monitor:'))}{domain} {self.sp(domain)}|\t\t"+''.join(f"{i} {self.sp(i)}|\t\t" for i in ln)+f"{exc}"
         return output
 
     def run(self):

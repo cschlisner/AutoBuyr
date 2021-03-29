@@ -182,7 +182,7 @@ def test_main():
     with output(output_type="dict", interval=50) as output_lines:
         for site in monitor_url:
             output_lines[site] = "starting monitor...."
-            monitors.append(SiteMonitor(headless, monitor_url[site], auto_buy=False, debug=debug, budget=budget,
+            monitors.append(SiteMonitor(headless, monitor_url[site], auto_buy=True, debug=debug, budget=budget,
                                         checkout=checkout_info))
             for p in monitor_url[site]:
                 urlc += len(monitor_url[site][p])
