@@ -40,7 +40,7 @@ class MonitorDisplay:
         prod = col(url[1]['prod'], "bold")
         price = col(url[1]['price'], "cyan" if url[1]['in_budget'] else "yellow")
         instock = col("IN STOCK", "green") if url[1]['status'] else col("OUT OF STOCK", "red")
-        instock = col("!!!! ATTEMPTING PURCHASE !!!!", "green") if url[1]['purchasing'] and url[1]['status'] else instock
+        instock = col("ATTEMPTING PURCHASE", "green") if url[1]['purchasing'] and url[1]['status'] else instock
         info = col(url[1]['info'], "yellow" if "purchased" not in url[1] else "blue")
         exc = col(url[1]['exc'][:self.space], "red")
         if "purchased" in url[1] and url[1]['prod'] == "test":

@@ -108,6 +108,7 @@ class SiteMonitor(threading.Thread):
                 #            f"{outofstock}{instock}{price}{in_stock}.{price.text}{price.text_content()}{price.get('value')}=>{pricet}({self.site.get_element_text(price)}")
 
                 self.alert(url, url if in_stock else '\\', in_stock, price=pricet)
+                self.price_check(url)
 
                 # IN STOCK AND SET TO PURCHASE
                 if self.purchasing is None and in_stock and "purchased" not in self.URL[url]:
@@ -217,7 +218,8 @@ class SiteMonitor(threading.Thread):
 
                 for t in urlThreads:
                     t[1].join()
-                    self.alert(t[0],"*")
+                    if "purchased" not in self.URL[t[0]]:
+                        self.alert(t[0],"*")
 
             except Exception as e:
                 with open("log/exc_{}.txt".format(self.domain), "a") as f:
