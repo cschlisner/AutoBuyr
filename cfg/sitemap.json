@@ -1,7 +1,7 @@
 {
     "officedepot": {
         "Domain": "https://www.officedepot.com",
-        "PingRate":1,
+        "PingRate":10,
         "StatusElem":{
             "InStock":{
                 "p": "//input[@id='addToCartButtonId']"
@@ -168,13 +168,13 @@
     },
     "bestbuy":{
         "Domain":"https://www.bestbuy.com",
-        "PingRate":1,
+        "PingRate":3,
         "StatusElem":{
             "InStock": {
                 "p": "//button[contains(@class,'add-to-cart-button')]"
             },
             "OutOfStock":{
-                "p": "//button[contains(@class,'btn-disabled') and text()='Sold Out']",
+                "p": "//button[contains(@class,'btn-disabled') and (text()='Sold Out' or text()='Coming Soon')]",
                 "ne":true
             },
             "Price":{
@@ -318,7 +318,168 @@
                 },
                 {
                     "label":"ConfirmOrder",
-                    "p":"//button[@data-track='Place your Order - Contact Card']"
+                    "p":"//button[@data-track='Place your Order - Contact Card']",
+                    "c": true
+                }
+            ]
+        }
+    },
+    "bhphotovideo":{
+        "Domain":"https://www.bhphotovideo.com/",
+        "PingRate":30,
+        "StatusElem":{
+            "InStock": {
+                "p": "//span[@data-selenium='stockStatus' and text()='In Stock'] | //button[@data-selenium='addToCartButton']"
+            },
+            "OutOfStock":{
+                "p": "//span[@data-selenium='stockStatus' and text()!='In Stock'] | //button[@data-selenium='notifyAvailabilityButton']",
+                "ne":true
+            },
+            "Price":{
+                "p":"//div[@data-selenium='pricingPrice']"
+            }
+        },
+        "Page":{
+            "cart":"/find/cart"
+        },
+        "Layout":["cart"],
+        "Map":{
+            "/c/product/":[
+                {
+                    "label": "OutOfStock",
+                    "p": "//span[@data-selenium='stockStatus'] | //button[@data-selenium='notifyAvailabilityButton']",
+                    "ne":true
+                },
+                {
+                    "label": "AddToCart",
+                    "p": "//button[@data-selenium='addToCartButton']",
+                    "c": true,
+                    "w": 2
+                },
+                {
+                    "label":"AddedToCart",
+                    "p":"//div[@data-selenium='modalContent']/div/div/h1[contains(text(),'Added to Your Cart')]",
+                    "w": 2,
+                    "ne": true
+                }
+            ],
+            "/find/cart":[
+                {
+                    "label": "Quantity",
+                    "p": "//input[@data-selenium='qtyInput']",
+                    "et": "1",
+                    "it": "1"
+                },
+                {
+                    "label": "CartEmpty",
+                    "p": "//span[text()='Your Cart Is Empty']",
+                    "np": true
+                },
+                {
+                    "label": "CheckOut",
+                    "p": "//input[@data-selenium='checkoutLogin']",
+                    "c": true
+                },
+                {
+                    "label": "CheckoutGuest",
+                    "p": "//button[@data-selenium='guestCheckoutBtn']",
+                    "c": true
+                },
+                {
+                    "label": "FName",
+                    "p": "//input[@data-selenium='firstName']",
+                    "it": "CI.FName"
+                },
+                {
+                    "label": "LName",
+                    "p": "//input[@id=data-selenium='lastName']",
+                    "it": "CI.LName"
+                },
+                {
+                    "label": "Addr",
+                    "p": "//input[@data-selenium='address1']",
+                    "it": "CI.Addr"
+                },
+                {
+                    "label": "City",
+                    "p": "//input[@data-selenium='city']",
+                    "it": "CI.City"
+                },
+                {
+                    "label": "State",
+                    "p": "//select[@data-selenium='state']",
+                    "it": "CI.State"
+                },
+                {
+                    "label": "ZIP",
+                    "p": "//input[@data-selenium='zip']",
+                    "it": "CI.ZIP"
+                },
+                {
+                    "label": "Email",
+                    "p": "//input[@data-selenium='email']",
+                    "it": "CI.Email"
+                },
+                {
+                    "label": "Phone",
+                    "p": "//input[@data-selenium='phone']",
+                    "it": "CI.Phone"
+                },
+                {
+                    "label": "EmailSignUp",
+                    "p": "//input[@data-selenium='emailSignUp']",
+                    "c": true,
+                    "ne": true
+                },
+                {
+                    "label": "ViewShippingOptions",
+                    "p": "//button[@data-selenium='saveAddress']",
+                    "c": true
+                },
+                {
+                    "label": "ContinueToPayment",
+                    "p": "//button[@data-selenium='continueFromShipping']",
+                    "c": true
+                },
+                {
+                    "label":"CC",
+                    "p":"//input[@name='ccNumber']",
+                    "it":"CI.CC",
+                    "iframe": "creditCardIframe"
+                },
+                {
+                    "label":"EXPM",
+                    "p":"//input[@name='ccExpMonth']",
+                    "it":"CI.EXPM"
+                },
+                {
+                    "label":"EXPY",
+                    "p":"//input[@name='ccExpMonth']",
+                    "it":"CI.EXPY"
+                },
+                {
+                    "label":"CVV",
+                    "p":"//input[@name='ccCIDval']",
+                    "it":"CI.CVV"
+                },
+                {
+                    "label":"Total",
+                    "p":"//span[@data-selenium='youPay']/span"
+                },
+                {
+                    "label": "ReviewOrder",
+                    "p": "//button[@data-selenium='reviewOrderButton']",
+                    "c": true
+                },
+                {
+                    "label": "AgreementButton",
+                    "p": "//button[@data-selenium='agreementButton']",
+                    "c": true
+                },
+                {
+                    "label":"ConfirmOrder",
+                    "p": "//button[@data-selenium='placeOrder']",
+                    "c": true
                 }
             ]
         }

@@ -1,8 +1,10 @@
+
 import errno
 import pathlib
+import shutil
 
-from MonitorDisplay import MonitorDisplay
-from SiteMonitor import SiteMonitor
+from autobuyr.MonitorDisplay import MonitorDisplay
+from autobuyr.SiteMonitor import SiteMonitor
 
 import sys, os, time, random
 from reprint import output
@@ -54,14 +56,14 @@ def main():
         if "--gui" in sys.argv:
             headless = False
 
-        if os.path.exists("config.json"):
-            with open("config.json", "r") as f:
+        if os.path.exists("../cfg/config.json"):
+            with open("../cfg/config.json", "r") as f:
                 cfg = json.load(f)
                 checkout_info = cfg['checkout_info']
                 budget = cfg['budget']
 
-        if os.path.exists("urls.json"):
-            with open("urls.json", "r") as f:
+        if os.path.exists("../cfg/urls.json"):
+            with open("../cfg/urls.json", "r") as f:
                 monitor_url = json.load(f)
 
         urlc = 0
@@ -152,6 +154,9 @@ def handle_dirs():
             except OSError as exc:
                 if exc.errno != errno.EEXIST:
                     raise
+        else:
+            shutil.rmtree(d)
+            os.makedirs(os.path.dirname(d))
 
 
 def test_main():
@@ -166,14 +171,14 @@ def test_main():
     if "--gui" in sys.argv:
         headless = False
 
-    if os.path.exists("config.json"):
-        with open("config.json", "r") as f:
+    if os.path.exists("../cfg/config.json"):
+        with open("../cfg/config.json", "r") as f:
             cfg = json.load(f)
             checkout_info = cfg['checkout_info']
             budget = cfg['budget']
 
-    if os.path.exists("urls.json"):
-        with open("urls.json", "r") as f:
+    if os.path.exists("../cfg/urls.json"):
+        with open("../cfg/urls.json", "r") as f:
             monitor_url = json.load(f)
 
     urlc = 0
@@ -191,14 +196,10 @@ def test_main():
         monitor.start()
 
     monitor_display = MonitorDisplay(monitors)
-    monitors_alive = monitors
-    while len(monitors_alive) > 0:
-        try:
-
-            monitor_display.run()
-        except KeyboardInterrupt:
-            for m in monitors:
-                m.kill()
+    try:
+        monitor_display.run()
+    except:
+        traceback.print_exc()
 
 
 if __name__ == '__main__':

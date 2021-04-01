@@ -4,14 +4,13 @@ import sys
 import threading
 import traceback
 from datetime import datetime
+import random
 from time import sleep
+import time as T
 
-import psutil
-import requests
 from lxml import html
 
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -19,12 +18,12 @@ from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.wait import WebDriverWait
 
-from Keymap import KeyStr
-from Site import Site
+from autobuyr.Keymap import KeyStr
+from autobuyr.Site import Site
 
 
 class SiteMonitor(threading.Thread):
-    def __init__(self, headless, urls, auto_buy=False, budget=None, debug=False, checkout=None):
+    def __init__(self, headless, urls, auto_buy=False, budget=None, debug=False, checkout=None, alert=None):
         threading.Thread.__init__(self)
         self.purchasing = None
         self.AUTO_PURCHASE = auto_buy
@@ -35,6 +34,7 @@ class SiteMonitor(threading.Thread):
         self.driver = self.get_web_driver(headless)
         self.driver.start_client()
         self.domain = ''
+        self.purchase_alert = alert
         # dict of prod(str):price limit(float)
         self.budget = budget
         self.URL = {}
@@ -64,31 +64,38 @@ class SiteMonitor(threading.Thread):
                 chromeOptions = webdriver.ChromeOptions()
                 chromeOptions.headless = headless
                 broswer = webdriver.Chrome(
-                    executable_path=str(pathlib.Path(__file__).parent.absolute()) + "/driver/chromedriver.exe",
+                    executable_path=str(pathlib.Path(__file__).parent.absolute()) + "/../driver/chromedriver.exe",
                     options=chromeOptions)
             elif driver == "phantomjs":
                 broswer = webdriver.PhantomJS(
-                    executable_path=str(pathlib.Path(__file__).parent.absolute()) + "/driver/phantomjs.exe")
+                    executable_path=str(pathlib.Path(__file__).parent.absolute()) + "/../driver/phantomjs.exe")
             else:  # "firefox"
                 fireFoxOptions = webdriver.FirefoxOptions()
                 fireFoxOptions.headless = headless
                 broswer = webdriver.Firefox(
-                    executable_path=str(pathlib.Path(__file__).parent.absolute()) + "/driver/geckodriver.exe",
+                    executable_path=str(pathlib.Path(__file__).parent.absolute()) + "/../driver/geckodriver.exe",
                     options=fireFoxOptions)
         else:
             fireFoxOptions = webdriver.FirefoxOptions()
             fireFoxOptions.headless = headless
             broswer = webdriver.Firefox(
-                executable_path=str(pathlib.Path(__file__).parent.absolute()) + "/driver/geckodriver-linux",
+                executable_path=str(pathlib.Path(__file__).parent.absolute()) + "/../driver/geckodriver-linux",
                 options=fireFoxOptions)
         return broswer
 
     def in_stock_req(self, url):
         try:
-            self.alert(url, "/")
-            pricet = None
+
+            for x in range(random.randint(0, self.site.ping)):
+                s = "/-\\|"[x%4]
+                self.alert(url, f"{s} {''.join(['.' for i in range(x)])}")
+                sleep(1)
+
             page = self.site.load_url(url)
+
             self.alert(url, "-")
+
+            sleep(0.5)
 
             self.URL[url]['exc'] = ""
 
@@ -118,7 +125,7 @@ class SiteMonitor(threading.Thread):
                         # self.alert(url, "Now in stock", True)
                         self.purchasing = url
                         for queued in self.URL:
-                            self.alert(queued, f"Waiting on {url}")
+                            self.alert(queued, f"Waiting on purchase.")
                         try:
                             self.URL[url]['exc'] = ""
                             self.URL[url]['purchasing']=True
@@ -127,10 +134,11 @@ class SiteMonitor(threading.Thread):
                                 self.BOUGHT = url
                                 self.URL[url]['purchased']=self.purchase_total
                                 self.URL[url]['purchasing'] = False
-                                self.alert(url,
-                                           "PURCHASED {} for {}".format(self.URL[url]['prod'], self.purchase_total))
-                                print('\a')
-
+                                self.alert(url,f"PURCHASED @ {self.purchase_total}")
+                                if self.purchase_alert is not None:
+                                    self.purchase_alert(self.URL[url])
+                                if self.URL[url]['prod'] =="test":
+                                    self.URL[url]['te'] = T.perf_counter() - self.URL[url]['t']
                                 return False
                             else:
                                 self.alert(url, "Purchase Failed", False)
@@ -167,15 +175,12 @@ class SiteMonitor(threading.Thread):
                 self.err(url, "Saw Timeout Element")
             return False
         except Exception as e:
-            self.err(url, f"{str(e)} : {sys.exc_info()[0]}")
+            self.err(url, f"{str(e)} : {sys.exc_info()[0]}", msg="!")
             with open("log/exc_{}.txt".format(self.domain), "a") as f:
                 f.write(datetime.now().strftime('%a-%b-%d-%H-%M-%S\n'))
                 f.write(url)
                 traceback.print_exc(file=f)
                 f.write("".join(["-" for i in range(30)]))
-
-    def purchase_alert(self, prod):
-        pass
 
     def alert(self, url, msg=None, stat=None, price=None):
         self.URL[url]['info'] = msg if msg else self.URL[url]['info']
@@ -185,9 +190,10 @@ class SiteMonitor(threading.Thread):
         if self.debug:
             print(msg)
 
-    def err(self, url, msg):
-        self.URL[url]['exc'] = msg
+    def err(self, url, err, msg=None):
+        self.URL[url]['exc'] = err
         self.URL[url]['status'] = False
+        self.URL[url]['info']=msg if msg else self.URL[url]['info']
         if self.debug:
             print(msg)
 
@@ -200,28 +206,32 @@ class SiteMonitor(threading.Thread):
             return False
 
     def run(self):
+        random.seed(datetime.microsecond)
+
         while not self.stopped.is_set():
-            self.STATUS = "Running."
+            self.STATUS = "running"
             try:
                 if self.BOUGHT:
                     # remove purchased url from our list to check
-                    self.purchase_alert(self.URL[self.BOUGHT])
+                    # self.purchase_alert(self.URL[self.BOUGHT])
                     self.BOUGHT = None
 
-                sleep(self.site.ping)
                 urlThreads = []
                 for url in self.URL:
                     self.URL[url]['exc'] = ""
+                    if self.URL[url]['prod'] == "test" and "t" not in self.URL[url]:
+                        self.URL[url]['t'] = T.perf_counter()
                     if "purchased" not in self.URL[url]:
-                        self.alert(url, "|")
+                        self.alert(url, "-")
                         urlt = threading.Thread(target=self.in_stock_req, args=(url,))
                         urlThreads.append((url,urlt))
+                        # delay
                         urlt.start()
 
                 for t in urlThreads:
                     t[1].join()
                     if "purchased" not in self.URL[t[0]]:
-                        self.alert(t[0],"*")
+                        self.alert(t[0], "|")
 
             except Exception as e:
                 with open("log/exc_{}.txt".format(self.domain), "a") as f:
@@ -247,23 +257,23 @@ class SiteMonitor(threading.Thread):
         # p.terminate()
         # print(os.system(f"taskkill /F /PID {p.parent().pid}"))
         # print(os.system(f"taskkill /F /PID {self.driver.service.process.pid}"))
-        self.STATUS = f"({self.domain}) Attempting to stop service: {self.driver.service} PID {self.driver.service.process.pid}"
+        self.STATUS = f"Attempting to stop service: {self.driver.service} PID {self.driver.service.process.pid}"
         try:
             self.driver.service.stop()
         except:
-            self.STATUS = f"({self.domain}) service stop failed -- {sys.exc_info()[0]} Attempting to close browser {self.driver}"
+            self.STATUS = f"service stop failed -- {sys.exc_info()[0]} Attempting to close browser {self.driver}"
             try:
                 self.driver.close()
             except:
-                self.STATUS = f"({self.domain}) closing browser failed -- {sys.exc_info()[0]} Attempting to quit browser {self.driver}"
+                self.STATUS = f"closing browser failed -- {sys.exc_info()[0]} Attempting to quit browser {self.driver}"
                 try:
                     self.driver.quit()
                 except:
-                    self.STATUS = f"({self.domain}) driver close failed -- fuck it\n{os.system('taskkill /F /IM Firefox.exe')}"
+                    self.STATUS = f"driver close failed -- fuck it\n{os.system('taskkill /F /IM Firefox.exe')}"
                     sys.exit()
         for u in self.URL:
             self.alert(u, "MONITOR DEAD")
-        self.STATUS = f"Monitor {self.domain} quit successfully?"
+        self.STATUS = f"quit successfully"
         self.exited = True
 
     def kill(self):
